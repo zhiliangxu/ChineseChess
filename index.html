@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chinese Chess (Xiangqi) - AI & PvP</title>
+</head>
+<body>
+
+    <h1>Xiangqi (Chinese Chess)</h1>
+    
+    <div id="status">Red's Turn</div>
+
+    <div class="controls">
+        <button id="btn-pvp" class="active">Human vs Human</button>
+        <button id="btn-pve">Human vs Computer</button>
+        <button id="btn-restart">Restart Game</button>
+    </div>
+
+    <div class="board-container" id="board">
+        <div class="grid-lines" id="grid-layer">
+            <div class="river">楚 河 &nbsp;&nbsp;&nbsp;&nbsp; 漢 界</div>
+        </div>
+        <div id="pieces-layer"></div>
+        <div id="highlight-layer"></div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+:root {
+    --board-bg: #e6b380;
+    --line-color: #5d4037;
+    --piece-red: #d32f2f;
+    --piece-black: #212121;
+    --selected-glow: 0 0 10px 2px rgba(0, 150, 255, 0.8);
+    --last-move: rgba(0, 255, 0, 0.3);
+    --valid-move: rgba(0, 255, 0, 0.6);
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #333;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0;
+    padding: 20px;
+    min-height: 100vh;
+}
+
+h1 { margin-bottom: 10px; }
+
+.controls {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+button {
+    padding: 8px 16px;
+    cursor: pointer;
+    background: #555;
+    color: white;
+    border: 1px solid #777;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+button:hover { background: #666; }
+button.active { background: #007bff; border-color: #0056b3; }
+
+#status {
+    font-size: 1.2em;
+    margin-bottom: 15px;
+    font-weight: bold;
+    height: 1.5em;
+}
+
+/* Board Styling */
+.board-container {
+    position: relative;
+    width: 450px;
+    height: 500px;
+    background-color: var(--board-bg);
+    border: 5px solid #4e342e;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+    user-select: none;
+}
+
+.grid-lines {
+    position: absolute;
+    top: 25px; left: 25px;
+    width: 400px; height: 450px;
+    border: 2px solid var(--line-color);
+    box-sizing: border-box;
+    z-index: 0;
+}
+
+/* Horizontal Lines */
+.h-line { position: absolute; background: var(--line-color); height: 1px; width: 100%; left: 0; }
+/* Vertical Lines */
+.v-line { position: absolute; background: var(--line-color); width: 1px; height: 100%; top: 0; }
+/* The River */
+.river {
+    position: absolute;
+    top: 200px; left: 1px;
+    width: 396px; height: 48px;
+    background: var(--board-bg);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--line-color);
+    font-size: 24px;
+    z-index: 1;
+}
+
+/* Diagonal Palace Lines */
+.palace-line { position: absolute; background: var(--line-color); width: 1px; transform-origin: top left; z-index: 0; }
+
+/* Pieces */
+.piece {
+    position: absolute;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: #f0d9b5;
+    border: 2px solid #8d6e63;
+    box-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 10;
+    transition: transform 0.2s, top 0.2s, left 0.2s;
+    transform: translate(-50%, -50%); /* Center on intersection */
+}
+
+.piece.red { color: var(--piece-red); border-color: var(--piece-red); }
+.piece.black { color: var(--piece-black); border-color: var(--piece-black); }
+
+.piece.selected { box-shadow: var(--selected-glow); z-index: 20; }
+
+/* Move Indicators */
+.dot {
+    position: absolute;
+    width: 12px; height: 12px;
+    background-color: var(--valid-move);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+    pointer-events: none;
+}
+
+/* Coordinate System: 9 columns (0-8), 10 rows (0-9) */
+/* Width: 400px / 8 cols = 50px per step */
+/* Height: 450px / 9 rows = 50px per step */
+/* Padding: 25px offset */
+
+@media (max-width: 500px) {
+    .board-container { transform: scale(0.8); margin-top: -50px; }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "chinesechess",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhiliangxu/ChineseChess.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/zhiliangxu/ChineseChess/issues"
+  },
+  "homepage": "https://github.com/zhiliangxu/ChineseChess#readme",
+  "description": "",
+  "devDependencies": {
+    "vite": "^7.3.0"
+  }
+}
