@@ -48,6 +48,52 @@ let aiDifficulty: 'easy' | 'medium' | 'hard' = 'medium';
 let lastMove: FullMove | null = null;
 
 /**
+ * Sound Effects (Web Audio API)
+ */
+const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+
+function playSound(type: 'move' | 'capture' | 'check'): void {
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    const now = audioCtx.currentTime;
+
+    if (type === 'move') {
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(600, now);
+        oscillator.frequency.exponentialRampToValueAtTime(400, now + 0.1);
+        gainNode.gain.setValueAtTime(0.1, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+        oscillator.start(now);
+        oscillator.stop(now + 0.1);
+    } else if (type === 'capture') {
+        oscillator.type = 'square';
+        oscillator.frequency.setValueAtTime(300, now);
+        oscillator.frequency.exponentialRampToValueAtTime(100, now + 0.2);
+        gainNode.gain.setValueAtTime(0.1, now);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        oscillator.start(now);
+        oscillator.stop(now + 0.2);
+    } else if (type === 'check') {
+        oscillator.type = 'triangle';
+        oscillator.frequency.setValueAtTime(800, now);
+        oscillator.frequency.setValueAtTime(400, now + 0.1);
+        oscillator.frequency.setValueAtTime(800, now + 0.2);
+        oscillator.frequency.setValueAtTime(400, now + 0.3);
+        
+        gainNode.gain.setValueAtTime(0.1, now);
+        gainNode.gain.linearRampToValueAtTime(0.1, now + 0.4);
+        gainNode.gain.linearRampToValueAtTime(0, now + 0.5);
+        
+        oscillator.start(now);
+        oscillator.stop(now + 0.5);
+    }
+}
+
+/**
  * Initialization
  */
 function init(): void {
@@ -286,11 +332,17 @@ function executeMove(fromR: number, fromC: number, toR: number, toC: number): vo
     const target = board[toR][toC];
     lastMove = { fromR, fromC, toR, toC };
     
+    if (target) {
+        playSound('capture');
+    } else {
+        playSound('move');
+    }
+
     // Check for King capture (End Game)
     if (target && target.type === 'g') {
         gameOver = true;
         renderPieces(); // Render final state
-        updateStatus(`Game Over! ${turn === RED ? "紅方" : "黑方"}勝利!`);
+        updateStatus(`遊戲結束! ${turn === RED ? "紅方" : "黑方"}勝利!`);
         // We perform the move visually
         board[toR][toC] = board[fromR][fromC];
         board[fromR][fromC] = null;
@@ -303,7 +355,46 @@ function executeMove(fromR: number, fromC: number, toR: number, toC: number): vo
     
     turn = (1 - turn) as PlayerColor;
     renderPieces();
-    if(!gameOver) updateStatus(turn === RED ? "紅方回合" : "黑方回合");
+
+    // Check if the new turn's king is in check
+    if (!gameOver && isKingInCheck(turn, board)) {
+        playSound('check');
+        updateStatus((turn === RED ? "紅方" : "黑方") + "回合 - 將軍!");
+    } else if (!gameOver) {
+        updateStatus(turn === RED ? "紅方回合" : "黑方回合");
+    }
+}
+
+function isKingInCheck(color: PlayerColor, boardState: (Piece | null)[][]): boolean {
+    // Find King
+    let kr = -1, kc = -1;
+    for (let r = 0; r < BOARD_HEIGHT; r++) {
+        for (let c = 0; c < BOARD_WIDTH; c++) {
+            const p = boardState[r][c];
+            if (p && p.type === 'g' && p.color === color) {
+                kr = r; kc = c;
+                break;
+            }
+        }
+        if (kr !== -1) break;
+    }
+
+    if (kr === -1) return false; // Should not happen in normal play
+
+    // Check if any opponent piece can move to (kr, kc)
+    const opponentColor = (1 - color) as PlayerColor;
+    for (let r = 0; r < BOARD_HEIGHT; r++) {
+        for (let c = 0; c < BOARD_WIDTH; c++) {
+            const p = boardState[r][c];
+            if (p && p.color === opponentColor) {
+                const moves = getValidMoves(r, c, boardState);
+                if (moves.some(m => m.r === kr && m.c === kc)) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 // ----------------------
