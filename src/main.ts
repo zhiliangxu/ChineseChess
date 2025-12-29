@@ -532,9 +532,25 @@ function getPstValue(type: PieceType, r: number, c: number, color: PlayerColor):
 function aiMove(): void {
     if(gameOver) return;
     
-    let depth = 3; 
+    let depth = 4; 
     if (aiDifficulty === 'easy') depth = 2;
-    if (aiDifficulty === 'hard') depth = 4;
+    if (aiDifficulty === 'hard') {
+        depth = 5;
+        // Dynamic depth for Hard mode
+        let pieceCount = 0;
+        for(let r=0; r<BOARD_HEIGHT; r++) {
+            for(let c=0; c<BOARD_WIDTH; c++) {
+                if(board[r][c]) pieceCount++;
+            }
+        }
+        
+        if (pieceCount > 28) {
+            depth = 4; // Beginning: less depth
+        }
+        else if (pieceCount < 17) {
+            depth = 6; // Endgame: more depth as it's more critical/complicated
+        }
+    }
 
     const bestMove = minimaxRoot(depth, aiColor);
     
@@ -563,6 +579,10 @@ function evaluateBoard(b: (Piece | null)[][], playerColor: PlayerColor): number 
                 }
                 val += getPstValue(p.type, r, c, p.color);
                 
+                // Mobility bonus: pieces that can move more are better
+                const moves = getValidMoves(r, c, b);
+                val += moves.length * 2;
+
                 if (p.color === playerColor) score += val;
                 else score -= val;
             }
@@ -576,13 +596,23 @@ function minimaxRoot(depth: number, playerColor: PlayerColor): FullMove | undefi
     let bestVal = -Infinity;
     let bestMove: FullMove | undefined;
 
-    // Sort moves for better pruning
+    // Sort moves for better pruning (MVV-LVA)
     moves.sort((a, b) => {
-        const pA = board[a.toR][a.toC];
-        const pB = board[b.toR][b.toC];
-        const valA = pA ? (PIECE_VALUES_SIMPLE[pA.type] || 0) : 0;
-        const valB = pB ? (PIECE_VALUES_SIMPLE[pB.type] || 0) : 0;
-        return valB - valA;
+        const victim = board[a.toR][a.toC];
+        const attacker = board[a.fromR][a.fromC];
+        const victimVal = victim ? (PIECE_VALUES_SIMPLE[victim.type] || 0) : 0;
+        const attackerVal = attacker ? (PIECE_VALUES_SIMPLE[attacker.type] || 0) : 0;
+        
+        const scoreA = victimVal * 10 - attackerVal;
+
+        const victimB = board[b.toR][b.toC];
+        const attackerB = board[b.fromR][b.fromC];
+        const victimValB = victimB ? (PIECE_VALUES_SIMPLE[victimB.type] || 0) : 0;
+        const attackerValB = attackerB ? (PIECE_VALUES_SIMPLE[attackerB.type] || 0) : 0;
+        
+        const scoreB = victimValB * 10 - attackerValB;
+
+        return scoreB - scoreA;
     });
 
     for (const move of moves) {
@@ -611,13 +641,21 @@ function minimax(depth: number, alpha: number, beta: number, playerColor: Player
     const moves = generateAllMoves(board, playerColor);
     if (moves.length === 0) return -Infinity; 
 
-    // Sort moves
+    // Sort moves (MVV-LVA)
     moves.sort((a, b) => {
-        const pA = board[a.toR][a.toC];
-        const pB = board[b.toR][b.toC];
-        const valA = pA ? (PIECE_VALUES_SIMPLE[pA.type] || 0) : 0;
-        const valB = pB ? (PIECE_VALUES_SIMPLE[pB.type] || 0) : 0;
-        return valB - valA;
+        const victim = board[a.toR][a.toC];
+        const attacker = board[a.fromR][a.fromC];
+        const victimVal = victim ? (PIECE_VALUES_SIMPLE[victim.type] || 0) : 0;
+        const attackerVal = attacker ? (PIECE_VALUES_SIMPLE[attacker.type] || 0) : 0;
+        const scoreA = victimVal * 10 - attackerVal;
+
+        const victimB = board[b.toR][b.toC];
+        const attackerB = board[b.fromR][b.fromC];
+        const victimValB = victimB ? (PIECE_VALUES_SIMPLE[victimB.type] || 0) : 0;
+        const attackerValB = attackerB ? (PIECE_VALUES_SIMPLE[attackerB.type] || 0) : 0;
+        const scoreB = victimValB * 10 - attackerValB;
+
+        return scoreB - scoreA;
     });
 
     let maxVal = -Infinity;
