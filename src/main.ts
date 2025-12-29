@@ -321,7 +321,6 @@ function getValidMoves(r: number, c: number, boardState: (Piece | null)[][]): Mo
             }
         }
         // Flying General (Check vertical line for other King)
-        let facingKing = true;
         const dir = color === RED ? -1 : 1; // Red looks up, Black looks down
         for(let k=r+dir; k>=0 && k<BOARD_HEIGHT; k+=dir) {
             if(boardState[k][c]) {
@@ -329,7 +328,6 @@ function getValidMoves(r: number, c: number, boardState: (Piece | null)[][]): Mo
                     // Valid flying kill move
                     moves.push({r: k, c: c});
                 }
-                facingKing = false; 
                 break;
             }
         }
@@ -454,35 +452,98 @@ function getValidMoves(r: number, c: number, boardState: (Piece | null)[][]): Mo
 }
 
 /**
- * Basic AI (Minimax with Alpha-Beta Pruning)
+ * Advanced AI Implementation
  */
+
+// Piece values
+const VAL_GEN = 10000;
+const VAL_ROOK = 900;
+const VAL_CANNON = 450;
+const VAL_HORSE = 400;
+const VAL_ELEPHANT = 20;
+const VAL_ADVISOR = 20;
+const VAL_PAWN = 30;
+
+// Piece-Square Tables (Red perspective: Row 0=Top/Enemy, Row 9=Bottom/Home)
+const PST_PAWN = [
+    [  9,  9,  9, 11, 13, 11,  9,  9,  9],
+    [ 19, 24, 34, 42, 44, 42, 34, 24, 19],
+    [ 19, 24, 32, 37, 37, 37, 32, 24, 19],
+    [ 19, 23, 27, 29, 30, 29, 27, 23, 19],
+    [ 14, 18, 20, 27, 29, 27, 20, 18, 14],
+    [  7,  0, 13,  0, 16,  0, 13,  0,  7],
+    [  7,  0,  7,  0, 15,  0,  7,  0,  7],
+    [  0,  0,  0,  0,  0,  0,  0,  0,  0],
+    [  0,  0,  0,  0,  0,  0,  0,  0,  0],
+    [  0,  0,  0,  0,  0,  0,  0,  0,  0]
+];
+
+const PST_HORSE = [
+    [ 4,  8, 16, 12,  4, 12, 16,  8,  4],
+    [ 4, 10, 28, 16,  8, 16, 28, 10,  4],
+    [12, 14, 23, 25, 25, 25, 23, 14, 12],
+    [10, 24, 34, 40, 40, 40, 34, 24, 10],
+    [ 6, 16, 26, 36, 36, 36, 26, 16,  6],
+    [ 2, 10, 18, 24, 24, 24, 18, 10,  2],
+    [ 4,  6, 10, 14, 14, 14, 10,  6,  4],
+    [ 0,  4,  8, 10, 10, 10,  8,  4,  0],
+    [ 2, -4,  4,  8,  8,  8,  4, -4,  2],
+    [ 0, -4,  0,  0,  0,  0,  0, -4,  0]
+];
+
+const PST_CANNON = [
+    [ 6,  6,  6,  8, 10,  8,  6,  6,  6],
+    [ 4,  6,  6,  6,  6,  6,  6,  6,  4],
+    [ 2,  4,  4,  4,  8,  4,  4,  4,  2],
+    [ 0,  2,  2,  2,  2,  2,  2,  2,  0],
+    [ 0,  0,  0,  0,  0,  0,  0,  0,  0],
+    [-2,  0,  4,  0,  8,  0,  4,  0, -2],
+    [ 0,  0,  0,  0,  0,  0,  0,  0,  0],
+    [ 2,  2,  4, 10, 12, 10,  4,  2,  2],
+    [ 2,  2,  0,  2,  0,  2,  0,  2,  2],
+    [ 0,  0,  0,  0,  0,  0,  0,  0,  0]
+];
+
+const PST_ROOK = [
+    [14, 14, 12, 18, 16, 18, 12, 14, 14],
+    [16, 20, 18, 24, 26, 24, 18, 20, 16],
+    [12, 12, 12, 18, 18, 18, 12, 12, 12],
+    [12, 18, 16, 22, 22, 22, 16, 18, 12],
+    [12, 16, 14, 18, 18, 18, 14, 16, 12],
+    [12, 16, 16, 18, 18, 18, 16, 16, 12],
+    [ 6, 10, 12, 14, 14, 14, 12, 10,  6],
+    [ 4,  8,  8, 14, 14, 14,  8,  8,  4],
+    [ 0,  4,  6, 10, 10, 10,  6,  4,  0],
+    [-2,  2,  4,  6,  6,  6,  4,  2, -2]
+];
+
+function getPstValue(type: PieceType, r: number, c: number, color: PlayerColor): number {
+    const row = color === RED ? r : 9 - r;
+    const col = c; 
+    switch(type) {
+        case 's': return PST_PAWN[row][col];
+        case 'h': return PST_HORSE[row][col];
+        case 'c': return PST_CANNON[row][col];
+        case 'r': return PST_ROOK[row][col];
+        default: return 0;
+    }
+}
 
 function aiMove(): void {
     if(gameOver) return;
     
-    let depth = 4; // Default Medium
+    let depth = 3; 
     if (aiDifficulty === 'easy') depth = 2;
-    if (aiDifficulty === 'hard') depth = 6;
+    if (aiDifficulty === 'hard') depth = 4;
 
     const bestMove = minimaxRoot(depth, aiColor);
     
     if (bestMove) {
         executeMove(bestMove.fromR, bestMove.fromC, bestMove.toR, bestMove.toC);
     } else {
-        // No moves? Usually means Stalemate or loss
         console.log("AI has no moves");
     }
 }
-
-const PIECE_VALUES: Record<PieceType, number> = {
-    'g': 10000,
-    'r': 90,
-    'c': 45,
-    'h': 40,
-    'e': 20,
-    'a': 20,
-    's': 10
-};
 
 function evaluateBoard(b: (Piece | null)[][], playerColor: PlayerColor): number {
     let score = 0;
@@ -490,15 +551,17 @@ function evaluateBoard(b: (Piece | null)[][], playerColor: PlayerColor): number 
         for(let c=0; c<BOARD_WIDTH; c++) {
             const p = b[r][c];
             if(p) {
-                let val = PIECE_VALUES[p.type];
-                // Slight position bonus for soldiers crossing river
-                if (p.type === 's') {
-                    if ((p.color === RED && r <= 4) || (p.color === BLACK && r >= 5)) {
-                        val += 10; 
-                        // Bonus for being close to general
-                        if (c >= 3 && c <= 5) val += 10;
-                    }
+                let val = 0;
+                switch(p.type) {
+                    case 'g': val = VAL_GEN; break;
+                    case 'r': val = VAL_ROOK; break;
+                    case 'c': val = VAL_CANNON; break;
+                    case 'h': val = VAL_HORSE; break;
+                    case 'e': val = VAL_ELEPHANT; break;
+                    case 'a': val = VAL_ADVISOR; break;
+                    case 's': val = VAL_PAWN; break;
                 }
+                val += getPstValue(p.type, r, c, p.color);
                 
                 if (p.color === playerColor) score += val;
                 else score -= val;
@@ -508,99 +571,91 @@ function evaluateBoard(b: (Piece | null)[][], playerColor: PlayerColor): number 
     return score;
 }
 
-function minimaxRoot(depth: number, isMaximizingPlayer: number): FullMove | undefined {
-    let newGameMoves = generateAllMoves(board, isMaximizingPlayer as PlayerColor);
-    let bestMove = -9999;
-    let bestMoveFound: FullMove | undefined;
+function minimaxRoot(depth: number, playerColor: PlayerColor): FullMove | undefined {
+    const moves = generateAllMoves(board, playerColor);
+    let bestVal = -Infinity;
+    let bestMove: FullMove | undefined;
 
-    // Sort moves to improve pruning (captures first)
-    newGameMoves.sort((a, b) => {
-        const pieceA = board[a.toR][a.toC];
-        const pieceB = board[b.toR][b.toC];
-        const valA = pieceA ? PIECE_VALUES[pieceA.type] : 0;
-        const valB = pieceB ? PIECE_VALUES[pieceB.type] : 0;
+    // Sort moves for better pruning
+    moves.sort((a, b) => {
+        const pA = board[a.toR][a.toC];
+        const pB = board[b.toR][b.toC];
+        const valA = pA ? (PIECE_VALUES_SIMPLE[pA.type] || 0) : 0;
+        const valB = pB ? (PIECE_VALUES_SIMPLE[pB.type] || 0) : 0;
         return valB - valA;
     });
 
-    for(let i = 0; i < newGameMoves.length; i++) {
-        let move = newGameMoves[i];
-        
-        // Make move
-        let captured = board[move.toR][move.toC];
+    for (const move of moves) {
+        const captured = board[move.toR][move.toC];
         board[move.toR][move.toC] = board[move.fromR][move.fromC];
         board[move.fromR][move.fromC] = null;
-        
-        let value = minimax(depth - 1, -10000, 10000, !isMaximizingPlayer ? aiColor : (1-aiColor) as PlayerColor);
-        
-        // Undo move
+
+        const val = -minimax(depth - 1, -Infinity, Infinity, (1 - playerColor) as PlayerColor);
+
         board[move.fromR][move.fromC] = board[move.toR][move.toC];
         board[move.toR][move.toC] = captured;
 
-        if(value >= bestMove) {
-            bestMove = value;
-            bestMoveFound = move;
+        if (val > bestVal) {
+            bestVal = val;
+            bestMove = move;
         }
     }
-    return bestMoveFound;
+    return bestMove;
 }
 
-function minimax(depth: number, alpha: number, beta: number, isMaximizingPlayer: number): number {
+function minimax(depth: number, alpha: number, beta: number, playerColor: PlayerColor): number {
     if (depth === 0) {
-        return -evaluateBoard(board, aiColor); // Negamax-ish approach simplifies logic
+        return evaluateBoard(board, playerColor);
     }
 
-    // Checking if King is missing (Game Over state in tree)
-    // For simplicity in this basic AI, we rely on high value of King in evaluation
-    
-    let newGameMoves = generateAllMoves(board, isMaximizingPlayer ? aiColor : (1-aiColor) as PlayerColor);
+    const moves = generateAllMoves(board, playerColor);
+    if (moves.length === 0) return -Infinity; 
 
-    if (isMaximizingPlayer) {
-        let bestMove = -9999;
-        for (let i = 0; i < newGameMoves.length; i++) {
-            let move = newGameMoves[i];
-            let captured = board[move.toR][move.toC];
-            
-            // Optimization: If capturing King, instant win
-            if (captured && captured.type === 'g') return 10000 + depth;
+    // Sort moves
+    moves.sort((a, b) => {
+        const pA = board[a.toR][a.toC];
+        const pB = board[b.toR][b.toC];
+        const valA = pA ? (PIECE_VALUES_SIMPLE[pA.type] || 0) : 0;
+        const valB = pB ? (PIECE_VALUES_SIMPLE[pB.type] || 0) : 0;
+        return valB - valA;
+    });
 
-            board[move.toR][move.toC] = board[move.fromR][move.fromC];
-            board[move.fromR][move.fromC] = null;
+    let maxVal = -Infinity;
 
-            bestMove = Math.max(bestMove, minimax(depth - 1, alpha, beta, !isMaximizingPlayer ? 1 : 0));
-            
-            board[move.fromR][move.fromC] = board[move.toR][move.toC];
-            board[move.toR][move.toC] = captured;
-
-            alpha = Math.max(alpha, bestMove);
-            if (beta <= alpha) {
-                return bestMove;
-            }
+    for (const move of moves) {
+        const captured = board[move.toR][move.toC];
+        
+        if (captured && captured.type === 'g') {
+             board[move.toR][move.toC] = board[move.fromR][move.fromC];
+             board[move.fromR][move.fromC] = null;
+             const winScore = 100000 + depth; 
+             board[move.fromR][move.fromC] = board[move.toR][move.toC];
+             board[move.toR][move.toC] = captured;
+             return winScore;
         }
-        return bestMove;
-    } else {
-        let bestMove = 9999;
-        for (let i = 0; i < newGameMoves.length; i++) {
-            let move = newGameMoves[i];
-            let captured = board[move.toR][move.toC];
-            
-            if (captured && captured.type === 'g') return -10000 - depth;
 
-            board[move.toR][move.toC] = board[move.fromR][move.fromC];
-            board[move.fromR][move.fromC] = null;
+        board[move.toR][move.toC] = board[move.fromR][move.fromC];
+        board[move.fromR][move.fromC] = null;
 
-            bestMove = Math.min(bestMove, minimax(depth - 1, alpha, beta, !isMaximizingPlayer ? 1 : 0));
-            
-            board[move.fromR][move.fromC] = board[move.toR][move.toC];
-            board[move.toR][move.toC] = captured;
+        const val = -minimax(depth - 1, -beta, -alpha, (1 - playerColor) as PlayerColor);
 
-            beta = Math.min(beta, bestMove);
-            if (beta <= alpha) {
-                return bestMove;
-            }
+        board[move.fromR][move.fromC] = board[move.toR][move.toC];
+        board[move.toR][move.toC] = captured;
+
+        if (val > maxVal) {
+            maxVal = val;
         }
-        return bestMove;
+        alpha = Math.max(alpha, val);
+        if (alpha >= beta) {
+            break;
+        }
     }
+    return maxVal;
 }
+
+const PIECE_VALUES_SIMPLE: Record<PieceType, number> = {
+    'g': 10000, 'r': 900, 'c': 450, 'h': 400, 'e': 20, 'a': 20, 's': 30
+};
 
 function generateAllMoves(b: (Piece | null)[][], color: PlayerColor): FullMove[] {
     let moves: FullMove[] = [];
