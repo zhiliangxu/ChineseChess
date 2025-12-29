@@ -13,34 +13,54 @@ const OFFSET = 25;
 const RED = 0;
 const BLACK = 1;
 
-const PIECE_TEXT = {
+type PieceType = 'g' | 'a' | 'e' | 'h' | 'r' | 'c' | 's';
+type PlayerColor = typeof RED | typeof BLACK;
+
+interface Piece {
+    type: PieceType;
+    color: PlayerColor;
+}
+
+interface Move {
+    r: number;
+    c: number;
+}
+
+interface FullMove {
+    fromR: number;
+    fromC: number;
+    toR: number;
+    toC: number;
+}
+
+const PIECE_TEXT: Record<PieceType, [string, string]> = {
     'g': ['帥', '將'], 'a': ['仕', '士'], 'e': ['相', '象'],
-    'h': ['馬', '馬'], 'r': ['車', '車'], 'c': ['炮', '炮'], 's': ['兵', '卒']
+    'h': ['傌', '馬'], 'r': ['俥', '車'], 'c': ['炮', '砲'], 's': ['兵', '卒']
 };
 
-let board = []; // 10x9 array
-let turn = RED;
-let selectedPiece = null;
+let board: (Piece | null)[][] = []; // 10x9 array
+let turn: PlayerColor = RED;
+let selectedPiece: Move | null = null;
 let gameOver = false;
-let gameMode = 'pvp'; // 'pvp' or 'pve'
-let aiColor = BLACK;
+let gameMode: 'pvp' | 'pve' = 'pvp';
+let aiColor: PlayerColor = BLACK;
 
 /**
  * Initialization
  */
-function init() {
+function init(): void {
     renderGrid();
     resetGame();
     setupEventListeners();
 }
 
-function setupEventListeners() {
-    document.getElementById('btn-pvp').addEventListener('click', () => setMode('pvp'));
-    document.getElementById('btn-pve').addEventListener('click', () => setMode('pve'));
-    document.getElementById('btn-restart').addEventListener('click', () => resetGame());
+function setupEventListeners(): void {
+    document.getElementById('btn-pvp')?.addEventListener('click', () => setMode('pvp'));
+    document.getElementById('btn-pve')?.addEventListener('click', () => setMode('pve'));
+    document.getElementById('btn-restart')?.addEventListener('click', () => resetGame());
 }
 
-function resetGame() {
+function resetGame(): void {
     board = Array(BOARD_HEIGHT).fill(null).map(() => Array(BOARD_WIDTH).fill(null));
     turn = RED;
     gameOver = false;
@@ -51,18 +71,20 @@ function resetGame() {
     clearHighlights();
 }
 
-function setMode(mode) {
+function setMode(mode: 'pvp' | 'pve'): void {
     gameMode = mode;
-    document.getElementById('btn-pvp').className = mode === 'pvp' ? 'active' : '';
-    document.getElementById('btn-pve').className = mode === 'pve' ? 'active' : '';
+    const btnPvp = document.getElementById('btn-pvp');
+    const btnPve = document.getElementById('btn-pve');
+    if (btnPvp) btnPvp.className = mode === 'pvp' ? 'active' : '';
+    if (btnPve) btnPve.className = mode === 'pve' ? 'active' : '';
     resetGame();
 }
 
 /**
  * Board Setup
  */
-function setupBoard() {
-    const setup = [
+function setupBoard(): void {
+    const setup: (PieceType | null)[][] = [
         ['r', 'h', 'e', 'a', 'g', 'a', 'e', 'h', 'r'],
         [null, null, null, null, null, null, null, null, null],
         [null, 'c', null, null, null, null, null, 'c', null],
@@ -73,14 +95,16 @@ function setupBoard() {
     // Place Black (Top)
     for(let r=0; r<5; r++) {
         for(let c=0; c<9; c++) {
-            if(setup[r][c]) board[r][c] = { type: setup[r][c], color: BLACK };
+            const type = setup[r][c];
+            if(type) board[r][c] = { type, color: BLACK };
         }
     }
     
     // Place Red (Bottom - Mirror)
     for(let r=0; r<5; r++) {
         for(let c=0; c<9; c++) {
-            if(setup[r][c]) board[9-r][c] = { type: setup[r][c], color: RED };
+            const type = setup[r][c];
+            if(type) board[9-r][c] = { type, color: RED };
         }
     }
 }
@@ -88,8 +112,10 @@ function setupBoard() {
 /**
  * Rendering
  */
-function renderGrid() {
+function renderGrid(): void {
     const layer = document.getElementById('grid-layer');
+    if (!layer) return;
+
     // Horizontal lines
     for(let i=0; i<10; i++) {
         let el = document.createElement('div');
@@ -119,7 +145,7 @@ function renderGrid() {
     drawLine(layer, 5, 9, 3, 7);
 }
 
-function drawLine(parent, c1, r1, c2, r2) {
+function drawLine(parent: HTMLElement, c1: number, r1: number, c2: number, r2: number): void {
     const x1 = c1 * CELL_SIZE; const y1 = r1 * CELL_SIZE;
     const x2 = c2 * CELL_SIZE; const y2 = r2 * CELL_SIZE;
     const length = Math.sqrt((x2-x1)**2 + (y2-y1)**2);
@@ -134,8 +160,9 @@ function drawLine(parent, c1, r1, c2, r2) {
     parent.appendChild(el);
 }
 
-function renderPieces() {
+function renderPieces(): void {
     const container = document.getElementById('pieces-layer');
+    if (!container) return;
     container.innerHTML = '';
     
     for(let r=0; r<BOARD_HEIGHT; r++) {
@@ -149,7 +176,7 @@ function renderPieces() {
                 el.style.top = (OFFSET + r * CELL_SIZE) + 'px';
                 
                 // Interaction
-                el.onclick = (e) => handleSquareClick(r, c);
+                el.onclick = () => handleSquareClick(r, c);
                 
                 if (selectedPiece && selectedPiece.r === r && selectedPiece.c === c) {
                     el.classList.add('selected');
@@ -163,7 +190,7 @@ function renderPieces() {
                 ghost.style.left = (OFFSET + c * CELL_SIZE - 20) + 'px';
                 ghost.style.top = (OFFSET + r * CELL_SIZE - 20) + 'px';
                 ghost.style.cursor = 'pointer';
-                ghost.style.zIndex = 5;
+                ghost.style.zIndex = '5';
                 ghost.onclick = () => handleSquareClick(r, c);
                 container.appendChild(ghost);
             }
@@ -171,8 +198,9 @@ function renderPieces() {
     }
 }
 
-function showMoves(moves) {
+function showMoves(moves: Move[]): void {
     const layer = document.getElementById('highlight-layer');
+    if (!layer) return;
     layer.innerHTML = '';
     moves.forEach(m => {
         const dot = document.createElement('div');
@@ -183,19 +211,21 @@ function showMoves(moves) {
     });
 }
 
-function clearHighlights() {
-    document.getElementById('highlight-layer').innerHTML = '';
+function clearHighlights(): void {
+    const layer = document.getElementById('highlight-layer');
+    if (layer) layer.innerHTML = '';
 }
 
-function updateStatus(msg) {
-    document.getElementById('status').innerText = msg;
+function updateStatus(msg: string): void {
+    const statusEl = document.getElementById('status');
+    if (statusEl) statusEl.innerText = msg;
 }
 
 /**
  * Game Logic & Rules
  */
 
-function handleSquareClick(r, c) {
+function handleSquareClick(r: number, c: number): void {
     if (gameOver) return;
     if (gameMode === 'pve' && turn === aiColor) return;
 
@@ -227,7 +257,7 @@ function handleSquareClick(r, c) {
     }
 }
 
-function executeMove(fromR, fromC, toR, toC) {
+function executeMove(fromR: number, fromC: number, toR: number, toC: number): void {
     const target = board[toR][toC];
     
     // Check for King capture (End Game)
@@ -245,7 +275,7 @@ function executeMove(fromR, fromC, toR, toC) {
     board[toR][toC] = board[fromR][fromC];
     board[fromR][fromC] = null;
     
-    turn = 1 - turn;
+    turn = (1 - turn) as PlayerColor;
     renderPieces();
     if(!gameOver) updateStatus(turn === RED ? "Red's Turn" : "Black's Turn");
 }
@@ -254,15 +284,15 @@ function executeMove(fromR, fromC, toR, toC) {
 // Movement Rules
 // ----------------------
 
-function getValidMoves(r, c, boardState) {
+function getValidMoves(r: number, c: number, boardState: (Piece | null)[][]): Move[] {
     const piece = boardState[r][c];
     if (!piece) return [];
     
-    let moves = [];
+    let moves: Move[] = [];
     const type = piece.type;
     const color = piece.color;
 
-    const addIfValid = (nr, nc) => {
+    const addIfValid = (nr: number, nc: number) => {
         if (nr < 0 || nr >= BOARD_HEIGHT || nc < 0 || nc >= BOARD_WIDTH) return;
         const target = boardState[nr][nc];
         if (!target || target.color !== color) {
@@ -287,7 +317,7 @@ function getValidMoves(r, c, boardState) {
         const dir = color === RED ? -1 : 1; // Red looks up, Black looks down
         for(let k=r+dir; k>=0 && k<BOARD_HEIGHT; k+=dir) {
             if(boardState[k][c]) {
-                if(boardState[k][c].type === 'g') {
+                if(boardState[k][c]!.type === 'g') {
                     // Valid flying kill move
                     moves.push({r: k, c: c});
                 }
@@ -363,7 +393,7 @@ function getValidMoves(r, c, boardState) {
                 if (!boardState[nr][nc]) {
                     moves.push({ r: nr, c: nc });
                 } else {
-                    if (boardState[nr][nc].color !== color) {
+                    if (boardState[nr][nc]!.color !== color) {
                         moves.push({ r: nr, c: nc });
                     }
                     break;
@@ -387,7 +417,7 @@ function getValidMoves(r, c, boardState) {
                     if (!jumped) {
                         jumped = true; // Found screen/platform
                     } else {
-                        if (boardState[nr][nc].color !== color) {
+                        if (boardState[nr][nc]!.color !== color) {
                             moves.push({ r: nr, c: nc }); // Capture
                         }
                         break;
@@ -419,7 +449,7 @@ function getValidMoves(r, c, boardState) {
  * Basic AI (Minimax with Alpha-Beta Pruning)
  */
 
-function aiMove() {
+function aiMove(): void {
     if(gameOver) return;
     
     const depth = 3; // Search depth
@@ -433,7 +463,7 @@ function aiMove() {
     }
 }
 
-const PIECE_VALUES = {
+const PIECE_VALUES: Record<PieceType, number> = {
     'g': 10000,
     'r': 90,
     'c': 45,
@@ -443,7 +473,7 @@ const PIECE_VALUES = {
     's': 10
 };
 
-function evaluateBoard(b, playerColor) {
+function evaluateBoard(b: (Piece | null)[][], playerColor: PlayerColor): number {
     let score = 0;
     for(let r=0; r<BOARD_HEIGHT; r++) {
         for(let c=0; c<BOARD_WIDTH; c++) {
@@ -467,15 +497,17 @@ function evaluateBoard(b, playerColor) {
     return score;
 }
 
-function minimaxRoot(depth, isMaximizingPlayer) {
-    let newGameMoves = generateAllMoves(board, isMaximizingPlayer);
+function minimaxRoot(depth: number, isMaximizingPlayer: number): FullMove | undefined {
+    let newGameMoves = generateAllMoves(board, isMaximizingPlayer as PlayerColor);
     let bestMove = -9999;
-    let bestMoveFound;
+    let bestMoveFound: FullMove | undefined;
 
     // Sort moves to improve pruning (captures first)
     newGameMoves.sort((a, b) => {
-        const valA = board[a.toR][a.toC] ? PIECE_VALUES[board[a.toR][a.toC].type] : 0;
-        const valB = board[b.toR][b.toC] ? PIECE_VALUES[board[b.toR][b.toC].type] : 0;
+        const pieceA = board[a.toR][a.toC];
+        const pieceB = board[b.toR][b.toC];
+        const valA = pieceA ? PIECE_VALUES[pieceA.type] : 0;
+        const valB = pieceB ? PIECE_VALUES[pieceB.type] : 0;
         return valB - valA;
     });
 
@@ -487,7 +519,7 @@ function minimaxRoot(depth, isMaximizingPlayer) {
         board[move.toR][move.toC] = board[move.fromR][move.fromC];
         board[move.fromR][move.fromC] = null;
         
-        let value = minimax(depth - 1, -10000, 10000, !isMaximizingPlayer ? aiColor : (1-aiColor));
+        let value = minimax(depth - 1, -10000, 10000, !isMaximizingPlayer ? aiColor : (1-aiColor) as PlayerColor);
         
         // Undo move
         board[move.fromR][move.fromC] = board[move.toR][move.toC];
@@ -501,7 +533,7 @@ function minimaxRoot(depth, isMaximizingPlayer) {
     return bestMoveFound;
 }
 
-function minimax(depth, alpha, beta, isMaximizingPlayer) {
+function minimax(depth: number, alpha: number, beta: number, isMaximizingPlayer: number): number {
     if (depth === 0) {
         return -evaluateBoard(board, aiColor); // Negamax-ish approach simplifies logic
     }
@@ -509,7 +541,7 @@ function minimax(depth, alpha, beta, isMaximizingPlayer) {
     // Checking if King is missing (Game Over state in tree)
     // For simplicity in this basic AI, we rely on high value of King in evaluation
     
-    let newGameMoves = generateAllMoves(board, isMaximizingPlayer ? aiColor : (1-aiColor));
+    let newGameMoves = generateAllMoves(board, isMaximizingPlayer ? aiColor : (1-aiColor) as PlayerColor);
 
     if (isMaximizingPlayer) {
         let bestMove = -9999;
@@ -523,7 +555,7 @@ function minimax(depth, alpha, beta, isMaximizingPlayer) {
             board[move.toR][move.toC] = board[move.fromR][move.fromC];
             board[move.fromR][move.fromC] = null;
 
-            bestMove = Math.max(bestMove, minimax(depth - 1, alpha, beta, !isMaximizingPlayer));
+            bestMove = Math.max(bestMove, minimax(depth - 1, alpha, beta, !isMaximizingPlayer ? 1 : 0));
             
             board[move.fromR][move.fromC] = board[move.toR][move.toC];
             board[move.toR][move.toC] = captured;
@@ -545,7 +577,7 @@ function minimax(depth, alpha, beta, isMaximizingPlayer) {
             board[move.toR][move.toC] = board[move.fromR][move.fromC];
             board[move.fromR][move.fromC] = null;
 
-            bestMove = Math.min(bestMove, minimax(depth - 1, alpha, beta, !isMaximizingPlayer));
+            bestMove = Math.min(bestMove, minimax(depth - 1, alpha, beta, !isMaximizingPlayer ? 1 : 0));
             
             board[move.fromR][move.fromC] = board[move.toR][move.toC];
             board[move.toR][move.toC] = captured;
@@ -559,11 +591,12 @@ function minimax(depth, alpha, beta, isMaximizingPlayer) {
     }
 }
 
-function generateAllMoves(b, color) {
-    let moves = [];
+function generateAllMoves(b: (Piece | null)[][], color: PlayerColor): FullMove[] {
+    let moves: FullMove[] = [];
     for(let r=0; r<BOARD_HEIGHT; r++) {
         for(let c=0; c<BOARD_WIDTH; c++) {
-            if(b[r][c] && b[r][c].color === color) {
+            const piece = b[r][c];
+            if(piece && piece.color === color) {
                 let ms = getValidMoves(r, c, b);
                 ms.forEach(m => {
                     moves.push({ fromR: r, fromC: c, toR: m.r, toC: m.c });
