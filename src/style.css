@@ -20,40 +20,56 @@ body {
     min-height: 100vh;
 }
 
-h1 { margin-bottom: 10px; }
+h1 { margin-bottom: 20px; }
+
+.game-layout {
+    display: flex;
+    flex-direction: row;
+    gap: 40px;
+    align-items: flex-start;
+}
+
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 200px;
+}
 
 .controls {
-    margin-bottom: 20px;
     display: flex;
+    flex-direction: column;
     gap: 15px;
-    align-items: center;
+    align-items: stretch;
 }
 
 button {
-    padding: 8px 16px;
+    padding: 12px 16px;
     cursor: pointer;
     background: #555;
     color: white;
     border: 1px solid #777;
     border-radius: 4px;
-    font-size: 14px;
+    font-size: 16px;
 }
 
 button:hover { background: #666; }
 button.active { background: #007bff; border-color: #0056b3; }
 
 #status {
-    font-size: 1.2em;
-    margin-bottom: 15px;
+    font-size: 1.5em;
     font-weight: bold;
-    height: 1.5em;
+    text-align: center;
+    padding: 10px;
+    background: #444;
+    border-radius: 8px;
 }
 
 /* Board Styling */
 .board-container {
     position: relative;
-    width: 450px;
-    height: 500px;
+    width: 630px;
+    height: 700px;
     background-color: var(--board-bg);
     border: 5px solid #4e342e;
     box-shadow: 0 10px 20px rgba(0,0,0,0.5);
@@ -62,8 +78,8 @@ button.active { background: #007bff; border-color: #0056b3; }
 
 .grid-lines {
     position: absolute;
-    top: 25px; left: 25px;
-    width: 400px; height: 450px;
+    top: 35px; left: 35px;
+    width: 560px; height: 630px;
     border: 2px solid var(--line-color);
     box-sizing: border-box;
     z-index: 0;
@@ -76,14 +92,14 @@ button.active { background: #007bff; border-color: #0056b3; }
 /* The River */
 .river {
     position: absolute;
-    top: 200px; left: 1px;
-    width: 396px; height: 48px;
+    top: 280px; left: 1px;
+    width: 556px; height: 68px;
     background: var(--board-bg);
     display: flex;
     justify-content: center;
     align-items: center;
     color: var(--line-color);
-    font-size: 24px;
+    font-size: 32px;
     z-index: 1;
 }
 
@@ -93,7 +109,7 @@ button.active { background: #007bff; border-color: #0056b3; }
 /* Pieces */
 .piece {
     position: absolute;
-    width: 40px; height: 40px;
+    width: 56px; height: 56px;
     border-radius: 50%;
     background: #f0d9b5;
     border: 2px solid #8d6e63;
@@ -101,7 +117,7 @@ button.active { background: #007bff; border-color: #0056b3; }
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 24px;
+    font-size: 32px;
     font-weight: bold;
     cursor: pointer;
     z-index: 10;
@@ -117,7 +133,7 @@ button.active { background: #007bff; border-color: #0056b3; }
 /* Move Indicators */
 .dot {
     position: absolute;
-    width: 12px; height: 12px;
+    width: 16px; height: 16px;
     background-color: var(--valid-move);
     border-radius: 50%;
     transform: translate(-50%, -50%);
@@ -125,11 +141,25 @@ button.active { background: #007bff; border-color: #0056b3; }
     pointer-events: none;
 }
 
-/* Coordinate System: 9 columns (0-8), 10 rows (0-9) */
-/* Width: 400px / 8 cols = 50px per step */
-/* Height: 450px / 9 rows = 50px per step */
-/* Padding: 25px offset */
+@media (max-width: 900px) {
+    .game-layout {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .sidebar {
+        width: 100%;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .controls {
+        flex-direction: row;
+    }
+}
 
-@media (max-width: 500px) {
-    .board-container { transform: scale(0.8); margin-top: -50px; }
+@media (max-width: 700px) {
+    .board-container { transform: scale(0.7); margin-top: -80px; }
+    .sidebar { flex-direction: column; }
 }

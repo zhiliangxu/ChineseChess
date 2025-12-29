@@ -5,8 +5,8 @@ import './style.css';
  */
 const BOARD_WIDTH = 9;
 const BOARD_HEIGHT = 10;
-const CELL_SIZE = 50;
-const OFFSET = 25;
+const CELL_SIZE = 70;
+const OFFSET = 35;
 
 // Pieces: [Type, Color] (Color: 0=Red, 1=Black)
 // Types: 'g'=General, 'a'=Advisor, 'e'=Elephant, 'h'=Horse, 'r'=Chariot(Rook), 'c'=Cannon, 's'=Soldier
@@ -128,14 +128,14 @@ function renderGrid(): void {
         let el1 = document.createElement('div');
         el1.className = 'v-line';
         el1.style.left = (i * CELL_SIZE) + 'px';
-        el1.style.height = '200px'; 
+        el1.style.height = (4 * CELL_SIZE) + 'px'; 
         layer.appendChild(el1);
 
         let el2 = document.createElement('div');
         el2.className = 'v-line';
         el2.style.left = (i * CELL_SIZE) + 'px';
-        el2.style.top = '250px';
-        el2.style.height = '200px'; 
+        el2.style.top = (5 * CELL_SIZE) + 'px';
+        el2.style.height = (4 * CELL_SIZE) + 'px'; 
         layer.appendChild(el2);
     }
     // Palace X-lines
