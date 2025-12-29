@@ -563,13 +563,20 @@ function aiMove(): void {
 
 function evaluateBoard(b: (Piece | null)[][], playerColor: PlayerColor): number {
     let score = 0;
+    let kingFound = false;
+    let opponentKingFound = false;
+
     for(let r=0; r<BOARD_HEIGHT; r++) {
         for(let c=0; c<BOARD_WIDTH; c++) {
             const p = b[r][c];
             if(p) {
                 let val = 0;
                 switch(p.type) {
-                    case 'g': val = VAL_GEN; break;
+                    case 'g': 
+                        val = VAL_GEN; 
+                        if (p.color === playerColor) kingFound = true;
+                        else opponentKingFound = true;
+                        break;
                     case 'r': val = VAL_ROOK; break;
                     case 'c': val = VAL_CANNON; break;
                     case 'h': val = VAL_HORSE; break;
@@ -579,7 +586,7 @@ function evaluateBoard(b: (Piece | null)[][], playerColor: PlayerColor): number 
                 }
                 val += getPstValue(p.type, r, c, p.color);
                 
-                // Mobility bonus: pieces that can move more are better
+                // Mobility bonus
                 const moves = getValidMoves(r, c, b);
                 val += moves.length * 2;
 
@@ -588,11 +595,22 @@ function evaluateBoard(b: (Piece | null)[][], playerColor: PlayerColor): number 
             }
         }
     }
+
+    if (!kingFound) return -1000000;
+    if (!opponentKingFound) return 1000000;
+
     return score;
 }
 
 function minimaxRoot(depth: number, playerColor: PlayerColor): FullMove | undefined {
     const moves = generateAllMoves(board, playerColor);
+    
+    // Immediate win check (including Flying General)
+    for (const move of moves) {
+        const target = board[move.toR][move.toC];
+        if (target && target.type === 'g') return move;
+    }
+
     let bestVal = -Infinity;
     let bestMove: FullMove | undefined;
 
@@ -639,7 +657,7 @@ function minimax(depth: number, alpha: number, beta: number, playerColor: Player
     }
 
     const moves = generateAllMoves(board, playerColor);
-    if (moves.length === 0) return -Infinity; 
+    if (moves.length === 0) return -1000000 - depth; // Loss
 
     // Sort moves (MVV-LVA)
     moves.sort((a, b) => {
@@ -666,7 +684,7 @@ function minimax(depth: number, alpha: number, beta: number, playerColor: Player
         if (captured && captured.type === 'g') {
              board[move.toR][move.toC] = board[move.fromR][move.fromC];
              board[move.fromR][move.fromC] = null;
-             const winScore = 100000 + depth; 
+             const winScore = 1000000 + depth; 
              board[move.fromR][move.fromC] = board[move.toR][move.toC];
              board[move.toR][move.toC] = captured;
              return winScore;
