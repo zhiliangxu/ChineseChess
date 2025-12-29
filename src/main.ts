@@ -45,6 +45,7 @@ let gameOver = false;
 let gameMode: 'pvp' | 'pve' = 'pvp';
 let aiColor: PlayerColor = BLACK;
 let aiDifficulty: 'easy' | 'medium' | 'hard' = 'medium';
+let lastMove: FullMove | null = null;
 
 /**
  * Initialization
@@ -69,6 +70,7 @@ function resetGame(): void {
     turn = RED;
     gameOver = false;
     selectedPiece = null;
+    lastMove = null;
     updateStatus("紅方回合");
     setupBoard();
     renderPieces();
@@ -172,6 +174,21 @@ function renderPieces(): void {
     const container = document.getElementById('pieces-layer');
     if (!container) return;
     container.innerHTML = '';
+
+    // Render Last Move Markers
+    if (lastMove) {
+        [
+            { r: lastMove.fromR, c: lastMove.fromC },
+            { r: lastMove.toR, c: lastMove.toC }
+        ].forEach(pos => {
+            const marker = document.createElement('div');
+            marker.className = 'last-move-marker';
+            marker.style.left = (OFFSET + pos.c * CELL_SIZE) + 'px';
+            marker.style.top = (OFFSET + pos.r * CELL_SIZE) + 'px';
+            marker.innerHTML = '<div class="corner-bottom-left"></div><div class="corner-bottom-right"></div>';
+            container.appendChild(marker);
+        });
+    }
     
     for(let r=0; r<BOARD_HEIGHT; r++) {
         for(let c=0; c<BOARD_WIDTH; c++) {
@@ -267,6 +284,7 @@ function handleSquareClick(r: number, c: number): void {
 
 function executeMove(fromR: number, fromC: number, toR: number, toC: number): void {
     const target = board[toR][toC];
+    lastMove = { fromR, fromC, toR, toC };
     
     // Check for King capture (End Game)
     if (target && target.type === 'g') {
