@@ -44,6 +44,7 @@ let selectedPiece: Move | null = null;
 let gameOver = false;
 let gameMode: 'pvp' | 'pve' = 'pvp';
 let aiColor: PlayerColor = BLACK;
+let aiDifficulty: 'easy' | 'medium' | 'hard' = 'medium';
 
 /**
  * Initialization
@@ -58,6 +59,9 @@ function setupEventListeners(): void {
     document.getElementById('btn-pvp')?.addEventListener('click', () => setMode('pvp'));
     document.getElementById('btn-pve')?.addEventListener('click', () => setMode('pve'));
     document.getElementById('btn-restart')?.addEventListener('click', () => resetGame());
+    document.getElementById('difficulty-select')?.addEventListener('change', (e) => {
+        aiDifficulty = (e.target as HTMLSelectElement).value as any;
+    });
 }
 
 function resetGame(): void {
@@ -75,8 +79,12 @@ function setMode(mode: 'pvp' | 'pve'): void {
     gameMode = mode;
     const btnPvp = document.getElementById('btn-pvp');
     const btnPve = document.getElementById('btn-pve');
+    const diffContainer = document.getElementById('difficulty-container');
+    
     if (btnPvp) btnPvp.className = mode === 'pvp' ? 'active' : '';
     if (btnPve) btnPve.className = mode === 'pve' ? 'active' : '';
+    if (diffContainer) diffContainer.style.display = mode === 'pve' ? 'flex' : 'none';
+    
     resetGame();
 }
 
@@ -452,7 +460,10 @@ function getValidMoves(r: number, c: number, boardState: (Piece | null)[][]): Mo
 function aiMove(): void {
     if(gameOver) return;
     
-    const depth = 3; // Search depth
+    let depth = 4; // Default Medium
+    if (aiDifficulty === 'easy') depth = 2;
+    if (aiDifficulty === 'hard') depth = 6;
+
     const bestMove = minimaxRoot(depth, aiColor);
     
     if (bestMove) {
