@@ -20,7 +20,12 @@ body {
     min-height: 100vh;
 }
 
-h1 { margin-bottom: 20px; }
+h1 { 
+    margin-bottom: 20px; 
+    font-family: 'Noto Serif TC', serif;
+    font-weight: 900;
+    font-size: 3em;
+}
 
 .game-layout {
     display: flex;
@@ -83,7 +88,8 @@ button.active { background: #007bff; border-color: #0056b3; }
 
 #status {
     font-size: 1.5em;
-    font-weight: bold;
+    font-family: 'Noto Serif TC', serif;
+    font-weight: 700;
     text-align: center;
     padding: 10px;
     background: #444;
@@ -125,6 +131,7 @@ button.active { background: #007bff; border-color: #0056b3; }
     align-items: center;
     color: var(--line-color);
     font-size: 32px;
+    font-family: 'Noto Serif TC', serif;
     z-index: 1;
 }
 
@@ -142,8 +149,9 @@ button.active { background: #007bff; border-color: #0056b3; }
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 32px;
-    font-weight: bold;
+    font-size: 36px;
+    font-family: 'Noto Serif TC', serif;
+    font-weight: 700;
     cursor: pointer;
     z-index: 10;
     transition: transform 0.2s, top 0.2s, left 0.2s;
