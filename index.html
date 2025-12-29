@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chinese Chess (Xiangqi) - AI & PvP</title>
+    <title>中國象棋</title>
 </head>
 <body>
 
-    <h1>Xiangqi (Chinese Chess)</h1>
+    <h1>中國象棋</h1>
     
     <div class="game-layout">
         <div class="board-container" id="board">
@@ -19,22 +19,22 @@
         </div>
 
         <div class="sidebar">
-            <div id="status">Red's Turn</div>
+            <div id="status">紅方回合</div>
 
             <div class="controls">
-                <button id="btn-pvp" class="active">Human vs Human</button>
-                <button id="btn-pve">Human vs Computer</button>
+                <button id="btn-pvp" class="active">人對人</button>
+                <button id="btn-pve">人對電腦</button>
                 
                 <div id="difficulty-container" class="difficulty-selector" style="display: none;">
-                    <label for="difficulty-select">Difficulty:</label>
+                    <label for="difficulty-select">難度:</label>
                     <select id="difficulty-select">
-                        <option value="easy">Easy</option>
-                        <option value="medium" selected>Medium</option>
-                        <option value="hard">Hard</option>
+                        <option value="easy">簡單</option>
+                        <option value="medium" selected>中等</option>
+                        <option value="hard">困難</option>
                     </select>
                 </div>
 
-                <button id="btn-restart">Restart Game</button>
+                <button id="btn-restart">重新開始遊戲</button>
             </div>
         </div>
     </div>

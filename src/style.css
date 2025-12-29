@@ -119,7 +119,7 @@ button.active { background: #007bff; border-color: #0056b3; }
     position: absolute;
     top: 280px; left: 1px;
     width: 556px; height: 68px;
-    background: var(--board-bg);
+    background: transparent;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -129,7 +129,7 @@ button.active { background: #007bff; border-color: #0056b3; }
 }
 
 /* Diagonal Palace Lines */
-.palace-line { position: absolute; background: var(--line-color); width: 1px; transform-origin: top left; z-index: 0; }
+.palace-line { position: absolute; background: var(--line-color); height: 1px; transform-origin: top left; z-index: 0; }
 
 /* Pieces */
 .piece {

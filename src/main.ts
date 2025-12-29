@@ -69,7 +69,7 @@ function resetGame(): void {
     turn = RED;
     gameOver = false;
     selectedPiece = null;
-    updateStatus("Red's Turn");
+    updateStatus("紅方回合");
     setupBoard();
     renderPieces();
     clearHighlights();
@@ -272,7 +272,7 @@ function executeMove(fromR: number, fromC: number, toR: number, toC: number): vo
     if (target && target.type === 'g') {
         gameOver = true;
         renderPieces(); // Render final state
-        updateStatus(`Game Over! ${turn === RED ? "Red" : "Black"} Wins!`);
+        updateStatus(`Game Over! ${turn === RED ? "紅方" : "黑方"}勝利!`);
         // We perform the move visually
         board[toR][toC] = board[fromR][fromC];
         board[fromR][fromC] = null;
@@ -285,7 +285,7 @@ function executeMove(fromR: number, fromC: number, toR: number, toC: number): vo
     
     turn = (1 - turn) as PlayerColor;
     renderPieces();
-    if(!gameOver) updateStatus(turn === RED ? "Red's Turn" : "Black's Turn");
+    if(!gameOver) updateStatus(turn === RED ? "紅方回合" : "黑方回合");
 }
 
 // ----------------------
