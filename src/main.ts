@@ -704,21 +704,21 @@ function getViolationStatus(historyList: HistoryItem[], currentSig: string, move
 
         if (hasCheck && hasRootlessChase) {
             violation = true;
-            msg = "一將一捉 (One Check, One Chase)";
+            msg = "一將一捉";
         } else if (hasCheck && hasRootedChase) {
              violation = true;
-             msg = "一將一捉 (One Check, One Chase)";
+             msg = "一將一捉";
         } else if (hasCheck) {
             const hasIdle = moverMoves.some(m => !m.isCheck && m.chaseType === 'none');
             if (!hasIdle) {
                 violation = true;
-                msg = "長將 (Perpetual Check)";
+                msg = "長將";
             }
         } else if (hasRootlessChase) {
             const hasIdle = moverMoves.some(m => !m.isCheck && m.chaseType === 'none');
             if (!hasIdle) {
                 violation = true;
-                msg = "長捉無根子 (Perpetual Chase of Rootless)";
+                msg = "長捉無根子";
             }
         }
         
@@ -726,7 +726,7 @@ function getViolationStatus(historyList: HistoryItem[], currentSig: string, move
             return { violation: true, msg, isDraw: false };
         } else {
             if (occurrences.length >= 3) {
-                 return { violation: false, msg: "雙方不變作和 (Draw)", isDraw: true };
+                 return { violation: false, msg: "雙方不變作和", isDraw: true };
             }
         }
     }
