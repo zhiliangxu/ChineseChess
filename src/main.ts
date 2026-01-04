@@ -183,26 +183,36 @@ function renderGrid(): void {
     if (!layer) return;
 
     // Horizontal lines
-    for(let i=0; i<10; i++) {
+    for(let i=0; i<9; i++) {
         let el = document.createElement('div');
         el.className = 'h-line';
         el.style.top = (i * CELL_SIZE) + 'px';
         layer.appendChild(el);
     }
-    // Vertical lines (split by river)
-    for(let i=0; i<9; i++) {
-        let el1 = document.createElement('div');
-        el1.className = 'v-line';
-        el1.style.left = (i * CELL_SIZE) + 'px';
-        el1.style.height = (4 * CELL_SIZE) + 'px'; 
-        layer.appendChild(el1);
+    // Vertical lines
+    for(let i=0; i<8; i++) {
+        if (i === 0) {
+            // Side lines are continuous
+            let el = document.createElement('div');
+            el.className = 'v-line';
+            el.style.left = (i * CELL_SIZE) + 'px';
+            el.style.height = (9 * CELL_SIZE) + 'px'; 
+            layer.appendChild(el);
+        } else {
+            // Inner lines are split by river
+            let el1 = document.createElement('div');
+            el1.className = 'v-line';
+            el1.style.left = (i * CELL_SIZE) + 'px';
+            el1.style.height = (4 * CELL_SIZE) + 'px'; 
+            layer.appendChild(el1);
 
-        let el2 = document.createElement('div');
-        el2.className = 'v-line';
-        el2.style.left = (i * CELL_SIZE) + 'px';
-        el2.style.top = (5 * CELL_SIZE) + 'px';
-        el2.style.height = (4 * CELL_SIZE) + 'px'; 
-        layer.appendChild(el2);
+            let el2 = document.createElement('div');
+            el2.className = 'v-line';
+            el2.style.left = (i * CELL_SIZE) + 'px';
+            el2.style.top = (5 * CELL_SIZE) + 'px';
+            el2.style.height = (4 * CELL_SIZE) + 'px'; 
+            layer.appendChild(el2);
+        }
     }
     // Palace X-lines
     drawLine(layer, 3, 0, 5, 2);
