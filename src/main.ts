@@ -33,6 +33,14 @@ interface FullMove {
     toC: number;
 }
 
+interface HistoryItem {
+    boardSig: string;
+    move: FullMove;
+    color: PlayerColor;
+    isCheck: boolean;
+    chaseType: 'none' | 'rootless' | 'rooted';
+}
+
 const PIECE_TEXT: Record<PieceType, [string, string]> = {
     'g': ['帥', '將'], 'a': ['仕', '士'], 'e': ['相', '象'],
     'h': ['傌', '馬'], 'r': ['俥', '車'], 'c': ['炮', '砲'], 's': ['兵', '卒']
@@ -46,6 +54,7 @@ let gameMode: 'pvp' | 'pve' = 'pvp';
 let aiColor: PlayerColor = BLACK;
 let aiDifficulty: 'easy' | 'medium' | 'hard' = 'medium';
 let lastMove: FullMove | null = null;
+let history: HistoryItem[] = [];
 
 /**
  * Sound Effects (Web Audio API)
@@ -117,6 +126,7 @@ function resetGame(): void {
     gameOver = false;
     selectedPiece = null;
     lastMove = null;
+    history = [];
     updateStatus("紅方回合");
     setupBoard();
     renderPieces();
@@ -331,6 +341,7 @@ function handleSquareClick(r: number, c: number): void {
 function executeMove(fromR: number, fromC: number, toR: number, toC: number): void {
     const target = board[toR][toC];
     lastMove = { fromR, fromC, toR, toC };
+    const mover = turn;
     
     if (target) {
         playSound('capture');
@@ -353,6 +364,23 @@ function executeMove(fromR: number, fromC: number, toR: number, toC: number): vo
     board[toR][toC] = board[fromR][fromC];
     board[fromR][fromC] = null;
     
+    // Rule Enforcement: Perpetual Check/Chase
+    const analysis = analyzeMoveType(board, mover);
+    const sig = getBoardSignature(board);
+    history.push({
+        boardSig: sig,
+        move: lastMove,
+        color: mover,
+        isCheck: analysis.isCheck,
+        chaseType: analysis.chaseType
+    });
+    
+    checkRepetition(sig, mover);
+    if (gameOver) {
+        renderPieces();
+        return;
+    }
+
     turn = (1 - turn) as PlayerColor;
     renderPieces();
 
@@ -560,6 +588,163 @@ function getValidMoves(r: number, c: number, boardState: (Piece | null)[][]): Mo
     return moves;
 }
 
+function getBoardSignature(b: (Piece | null)[][]): string {
+    return b.map(row => row.map(p => p ? `${p.color}${p.type}` : '_').join('')).join('/');
+}
+
+function isProtected(b: (Piece | null)[][], r: number, c: number, color: PlayerColor): boolean {
+    const original = b[r][c];
+    b[r][c] = { type: 's', color: (1 - color) as PlayerColor }; 
+    
+    let protectedPiece = false;
+    for (let i = 0; i < BOARD_HEIGHT; i++) {
+        for (let j = 0; j < BOARD_WIDTH; j++) {
+            const p = b[i][j];
+            if (p && p.color === color) {
+                const moves = getValidMoves(i, j, b);
+                if (moves.some(m => m.r === r && m.c === c)) {
+                    protectedPiece = true;
+                    break;
+                }
+            }
+        }
+        if (protectedPiece) break;
+    }
+    
+    b[r][c] = original;
+    return protectedPiece;
+}
+
+function isPinned(b: (Piece | null)[][], r: number, c: number, color: PlayerColor): boolean {
+    const original = b[r][c];
+    b[r][c] = null;
+    const pinned = isKingInCheck(color, b);
+    b[r][c] = original;
+    return pinned;
+}
+
+function analyzeMoveType(b: (Piece | null)[][], color: PlayerColor): { isCheck: boolean, chaseType: 'none' | 'rootless' | 'rooted' } {
+    const isCheck = isKingInCheck((1 - color) as PlayerColor, b);
+    let chaseType: 'none' | 'rootless' | 'rooted' = 'none';
+    const opponent = (1 - color) as PlayerColor;
+    
+    for (let r = 0; r < BOARD_HEIGHT; r++) {
+        for (let c = 0; c < BOARD_WIDTH; c++) {
+            const p = b[r][c];
+            if (p && p.color === opponent && p.type !== 'g') {
+                let isAttacked = false;
+                for (let ar = 0; ar < BOARD_HEIGHT; ar++) {
+                    for (let ac = 0; ac < BOARD_WIDTH; ac++) {
+                        const attacker = b[ar][ac];
+                        if (attacker && attacker.color === color) {
+                            const moves = getValidMoves(ar, ac, b);
+                            if (moves.some(m => m.r === r && m.c === c)) {
+                                isAttacked = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (isAttacked) break;
+                }
+                
+                if (isAttacked) {
+                    const protectedPiece = isProtected(b, r, c, opponent);
+                    if (!protectedPiece) {
+                        return { isCheck, chaseType: 'rootless' };
+                    } else {
+                        let hasTrueRoot = false;
+                        const original = b[r][c];
+                        b[r][c] = { type: 's', color: color }; 
+                        
+                        for (let pr = 0; pr < BOARD_HEIGHT; pr++) {
+                            for (let pc = 0; pc < BOARD_WIDTH; pc++) {
+                                const protector = b[pr][pc];
+                                if (protector && protector.color === opponent) {
+                                    const moves = getValidMoves(pr, pc, b);
+                                    if (moves.some(m => m.r === r && m.c === c)) {
+                                        if (!isPinned(b, pr, pc, opponent)) {
+                                            hasTrueRoot = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            if (hasTrueRoot) break;
+                        }
+                        b[r][c] = original;
+                        
+                        if (!hasTrueRoot) {
+                            return { isCheck, chaseType: 'rootless' };
+                        } else {
+                            if (chaseType === 'none') chaseType = 'rooted';
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return { isCheck, chaseType };
+}
+
+function getViolationStatus(historyList: HistoryItem[], currentSig: string, mover: PlayerColor): { violation: boolean, msg: string, isDraw: boolean } {
+    const occurrences = historyList.filter(h => h.boardSig === currentSig);
+    if (occurrences.length >= 2) { 
+        const firstIdx = historyList.findIndex(h => h.boardSig === currentSig);
+        if (firstIdx === -1) return { violation: false, msg: "", isDraw: false };
+
+        const cycle = historyList.slice(firstIdx);
+        const moverMoves = cycle.filter(h => h.color === mover);
+        
+        const hasCheck = moverMoves.some(m => m.isCheck);
+        const hasRootlessChase = moverMoves.some(m => m.chaseType === 'rootless');
+        const hasRootedChase = moverMoves.some(m => m.chaseType === 'rooted');
+        
+        let violation = false;
+        let msg = "";
+
+        if (hasCheck && hasRootlessChase) {
+            violation = true;
+            msg = "一將一捉";
+        } else if (hasCheck && hasRootedChase) {
+             violation = true;
+             msg = "一將一捉";
+        } else if (hasCheck) {
+            const hasIdle = moverMoves.some(m => !m.isCheck && m.chaseType === 'none');
+            if (!hasIdle) {
+                violation = true;
+                msg = "長將";
+            }
+        } else if (hasRootlessChase) {
+            const hasIdle = moverMoves.some(m => !m.isCheck && m.chaseType === 'none');
+            if (!hasIdle) {
+                violation = true;
+                msg = "長捉無根子";
+            }
+        }
+        
+        if (violation) {
+            return { violation: true, msg, isDraw: false };
+        } else {
+            if (occurrences.length >= 3) {
+                 return { violation: false, msg: "雙方不變作和", isDraw: true };
+            }
+        }
+    }
+    return { violation: false, msg: "", isDraw: false };
+}
+
+function checkRepetition(currentSig: string, mover: PlayerColor): void {
+    const status = getViolationStatus(history, currentSig, mover);
+    
+    if (status.violation) {
+        gameOver = true;
+        updateStatus(`${mover === RED ? "紅方" : "黑方"} ${status.msg} - 判負!`);
+    } else if (status.isDraw) {
+        gameOver = true;
+        updateStatus(status.msg);
+    }
+}
+
 /**
  * Advanced AI Implementation
  */
@@ -714,8 +899,35 @@ function evaluateBoard(b: (Piece | null)[][], playerColor: PlayerColor): number 
 function minimaxRoot(depth: number, playerColor: PlayerColor): FullMove | undefined {
     const moves = generateAllMoves(board, playerColor);
     
+    // Filter out moves that cause immediate violation
+    const validMoves = moves.filter(move => {
+        // Simulate move
+        const captured = board[move.toR][move.toC];
+        board[move.toR][move.toC] = board[move.fromR][move.fromC];
+        board[move.fromR][move.fromC] = null;
+        
+        const analysis = analyzeMoveType(board, playerColor);
+        const sig = getBoardSignature(board);
+        
+        const tempHistory = [...history, {
+            boardSig: sig,
+            move: move,
+            color: playerColor,
+            isCheck: analysis.isCheck,
+            chaseType: analysis.chaseType
+        }];
+        
+        const status = getViolationStatus(tempHistory, sig, playerColor);
+        
+        // Undo move
+        board[move.fromR][move.fromC] = board[move.toR][move.toC];
+        board[move.toR][move.toC] = captured;
+        
+        return !status.violation;
+    });
+
     // Immediate win check (including Flying General)
-    for (const move of moves) {
+    for (const move of validMoves) {
         const target = board[move.toR][move.toC];
         if (target && target.type === 'g') return move;
     }
@@ -724,7 +936,7 @@ function minimaxRoot(depth: number, playerColor: PlayerColor): FullMove | undefi
     let bestMove: FullMove | undefined;
 
     // Sort moves for better pruning (MVV-LVA)
-    moves.sort((a, b) => {
+    validMoves.sort((a, b) => {
         const victim = board[a.toR][a.toC];
         const attacker = board[a.fromR][a.fromC];
         const victimVal = victim ? (PIECE_VALUES_SIMPLE[victim.type] || 0) : 0;
@@ -742,7 +954,7 @@ function minimaxRoot(depth: number, playerColor: PlayerColor): FullMove | undefi
         return scoreB - scoreA;
     });
 
-    for (const move of moves) {
+    for (const move of validMoves) {
         const captured = board[move.toR][move.toC];
         board[move.toR][move.toC] = board[move.fromR][move.fromC];
         board[move.fromR][move.fromC] = null;
