@@ -392,6 +392,17 @@ function executeMove(fromR: number, fromC: number, toR: number, toC: number): vo
     }
 
     turn = (1 - turn) as PlayerColor;
+
+    if (!gameOver) {
+        const hasMoves = hasLegalMoves(board, turn);
+        if (!hasMoves) {
+            gameOver = true;
+            renderPieces();
+            updateStatus(`${turn === RED ? "紅方" : "黑方"}無合法著法 - ${turn === RED ? "黑方" : "紅方"}勝!`);
+            return;
+        }
+    }
+
     renderPieces();
 
     // Check if the new turn's king is in check
@@ -1058,6 +1069,30 @@ function generateAllMoves(b: (Piece | null)[][], color: PlayerColor): FullMove[]
         }
     }
     return moves;
+}
+
+function hasLegalMoves(b: (Piece | null)[][], color: PlayerColor): boolean {
+    for(let r=0; r<BOARD_HEIGHT; r++) {
+        for(let c=0; c<BOARD_WIDTH; c++) {
+            const piece = b[r][c];
+            if(piece && piece.color === color) {
+                const moves = getValidMoves(r, c, b);
+                for (const move of moves) {
+                    const captured = b[move.r][move.c];
+                    b[move.r][move.c] = b[r][c];
+                    b[r][c] = null;
+
+                    const inCheck = isKingInCheck(color, b);
+
+                    b[r][c] = b[move.r][move.c];
+                    b[move.r][move.c] = captured;
+
+                    if (!inCheck) return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 // Start
