@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中國象棋</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+TC:wght@700&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="/assets/index-BAJlQwXh.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-BicBP9w4.css">
+</head>
+<body>
+
+    <h1>中國象棋</h1>
+    
+    <div class="game-layout">
+        <div class="board-container" id="board">
+            <div class="grid-lines" id="grid-layer">
+                <div class="river">楚 河 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 漢 界</div>
+            </div>
+            <div id="pieces-layer"></div>
+            <div id="highlight-layer"></div>
+        </div>
+
+        <div class="sidebar">
+            <div id="status">紅方回合</div>
+
+            <div class="controls">
+                <button id="btn-pvp" class="active">人對人</button>
+                <button id="btn-pve">人對電腦</button>
+                
+                <div id="difficulty-container" class="difficulty-selector" style="display: none;">
+                    <label for="difficulty-select">難度:</label>
+                    <select id="difficulty-select">
+                        <option value="easy">初級</option>
+                        <option value="medium" selected>中級</option>
+                        <option value="hard">高級</option>
+                    </select>
+                </div>
+
+                <button id="btn-restart">重新開始遊戲</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
