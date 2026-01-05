@@ -394,15 +394,12 @@ function executeMove(fromR: number, fromC: number, toR: number, toC: number): vo
     turn = (1 - turn) as PlayerColor;
 
     if (!gameOver) {
-        const inCheck = isKingInCheck(turn, board);
-        if (!inCheck) {
-            const hasMoves = hasLegalMoves(board, turn);
-            if (!hasMoves) {
-                gameOver = true;
-                renderPieces();
-                updateStatus(`${turn === RED ? "紅方" : "黑方"}無合法著法 - ${turn === RED ? "黑方" : "紅方"}勝!`);
-                return;
-            }
+        const hasMoves = hasLegalMoves(board, turn);
+        if (!hasMoves) {
+            gameOver = true;
+            renderPieces();
+            updateStatus(`${turn === RED ? "紅方" : "黑方"}無合法著法 - ${turn === RED ? "黑方" : "紅方"}勝!`);
+            return;
         }
     }
 
